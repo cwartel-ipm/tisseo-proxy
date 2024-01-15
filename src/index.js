@@ -1,63 +1,60 @@
+const cheerio = require("cheerio");
 const express = require("express");
 const {
   createProxyMiddleware,
-  responseInterceptor
+  responseInterceptor,
 } = require("http-proxy-middleware");
-const Jimp = require("jimp");
 
 const app = express();
 
-/**
- * Original: https://upload.wikimedia.org/wikipedia/en/7/7d/Lenna_%28test_image%29.png
- * Redirect to manipulated image:
- */
-app.get("/", (req, res) => {
-  res.redirect("/wikipedia/en/7/7d/Lenna_%28test_image%29.png");
-});
+app.use("/client", express.static("client"));
 
 app.use(
-  "/wikipedia",
+  "/",
   createProxyMiddleware({
-    target: "https://upload.wikimedia.org/wikipedia",
+    target: "https://www.tisseo.fr/",
     changeOrigin: true,
+    pathFilter: ["!/client/*"],
     selfHandleResponse: true,
     logger: console,
     on: {
       proxyRes: responseInterceptor(
         async (responseBuffer, proxyRes, req, res) => {
-          const imageTypes = [
-            "image/png",
-            "image/jpg",
-            "image/jpeg",
-            "image/gif"
-          ];
-          if (imageTypes.includes(proxyRes.headers["content-type"])) {
-            console.log(
-              `${req.method} ${req.path} -> ${proxyRes.req.protocol}//${proxyRes.req.host}${proxyRes.req.path} [${proxyRes.statusCode}]`
-            );
+          console.log(req.path);
+          // adapt html resources
+          // TODO : check if we are requesting root or any other know resource
+          if (req.path === "/") {
+            document = cheerio.load(responseBuffer);
+            // hide initial document
+            document(
+              '<style type="text/css">body{visibility: hidden;}</style>',
+            ).appendTo("head");
+            // inject client side script to SPA-ize
+            document(
+              //'<script type="text/javascript" src="https://6q2zmj.csb.app/src/index2.js" />',
+              '<script type="text/javascript" src="client/SPA.js" />',
+            ).appendTo("head");
 
-            try {
-              const image = await Jimp.read(responseBuffer);
-              image.flip(true, false);
-              image.sepia();
-              image.pixelate(5);
-              return image.getBufferAsync(Jimp.AUTO);
-            } catch (err) {
-              console.log("image processing error: ", err);
-              return responseBuffer;
-            }
+            const response = document.html();
+            //turn absolute links to relative ones
+            return response
+              .replaceAll("http://www.tisseo.fr", "")
+              .replaceAll("https://www.tisseo.fr", "");
+            //return responseBuffer;
           }
 
+          if (proxyRes.headers["content-type"].includes("text/html")) {
+            return responseBuffer
+              .toString("utf8")
+              .replaceAll("http://www.tisseo.fr", "")
+              .replaceAll("https://www.tisseo.fr", "");
+          }
+          //leave other resource as is
           return responseBuffer;
-        }
-      )
-    }
-  })
+        },
+      ),
+    },
+  }),
 );
 
-app.listen(8080, () => {
-  console.log("Manipulate Wikipedia images. Example:");
-  console.log(
-    "https://03rjl.sse.codesandbox.io/wikipedia/en/7/7d/Lenna_%28test_image%29.png"
-  );
-});
+app.listen(8080, () => {});
