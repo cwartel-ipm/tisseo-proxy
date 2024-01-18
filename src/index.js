@@ -58,6 +58,4 @@ app.use(
 );
 
 var port = process.env["PORT"] || 8080;
-var addr = process.env["BIND_ADDRESS"] || "127.0.0.1";
-console.log("Starting app on " + addr + ":" + port);
-app.listen(port, addr, () => console.log("App launched."));
+app.listen(port, () => {});
