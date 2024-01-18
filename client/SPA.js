@@ -290,10 +290,6 @@ reshapePDF = function (page) {
   });
 };
 
-//document.body.style.visibility = "hidden";
-
-//
-
 document.addEventListener("DOMContentLoaded", (event) => {
   my_cache();
   SPACache.navigate("/se-deplacer/horaires");
