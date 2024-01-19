@@ -294,3 +294,5 @@ document.addEventListener("DOMContentLoaded", (event) => {
   my_cache();
   SPACache.navigate("/se-deplacer/horaires");
 });
+
+//autodeploy ?
