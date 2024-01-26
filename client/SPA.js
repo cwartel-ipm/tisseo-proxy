@@ -1,10 +1,7 @@
-// TODO
-// - can reshape and cache behaviour be merged ?
-// - proxify to cache any web site, needs inlining of external elements : https://github.com/bernd-wechner/Copy-with-Style/tree/master
-//                                                                        https://codesandbox.io/p/devbox/siteproxy-m8zp7k?file=%2Findex.js
-//                                                                        https://www.npmjs.com/package/http-proxy-middleware
-
-// NEEDS FIX :  enable mix content : https://stackoverflow.com/questions/67765238/mixed-content-the-page-at-was-loaded-over-https-but-requested-an-insecure-resour
+// TODO :
+// factorize spinner
+// css ize instead of inline style ?
+// generalize navigation (through router ?) / page look transformation (reshape) / page behaviour transformation (cache_behaviour)
 
 // not necessary ...
 function loadJS(FILE_URL) {
@@ -122,6 +119,8 @@ const SPACache = (function () {
   }
 
   function navigate(url) {
+    var target = document.getElementById("spinner");
+    var spinner = new Spinner().spin(target);
     getPage(url).then((node) => {
       renderPage(node);
     });
@@ -146,7 +145,7 @@ const SPACachePDF = (function () {
           return blobToBase64(blob).then((base64) => {
             PDFnode = document.createElement("body");
             PDFnode.innerHTML =
-              '<embed name="pdf-embed" internalid="pdf-embed" style="position: fixed;left:0px;top:50px;height:1020px;" width=100% type="application/pdf" src="about:blank">';
+              '<embed  name="pdf-embed" internalid="pdf-embed" style="position: fixed;left:0px;top:50px;height:1020px;" width=100% type="application/pdf" src="about:blank">';
             PDFnode.querySelectorAll("embed")[0].src =
               URL.createObjectURL(blob);
             //PDFnode.querySelectorAll("embed")[0].src = url;
@@ -185,6 +184,10 @@ const SPACachePDF = (function () {
   }
 
   function loadPDF(url) {
+    document.body.innerHTML =
+      '<div style="margin: 0;position: absolute;top: 300px;left: 50%;-ms-transform: translate(-50%, -50%);transform: translate(-50%, -50%);" id="spinner"></div>';
+    var target = document.getElementById("spinner");
+    var spinner = new Spinner().spin(target);
     getPDF(url).then((node) => {
       displayPDF(node);
     });
@@ -253,6 +256,9 @@ reshapePDF = function (page) {
       elm.style.position = "fixed";
       elm.style.top = "50px";
       elm.style.height = "1020px";
+      elm.onload = function () {
+        page.style.visibility = "visible";
+      };
 
       //b = document.querySelectorAll("body")[0];
       page.style.backgroundColor = "#ebebeb";
@@ -283,8 +289,6 @@ reshapePDF = function (page) {
 
       page.insertBefore(a, elm);
       page.insertBefore(a2, elm);
-
-      page.style.visibility = "visible";
     });
     resolve(page);
   });
@@ -298,3 +302,6 @@ document.addEventListener("DOMContentLoaded", (event) => {
   my_cache();
   SPACache.navigate("/se-deplacer/horaires");
 });
+
+var target = document.getElementById("spinner");
+var spinner = new Spinner().spin(target);
