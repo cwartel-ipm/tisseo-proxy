@@ -16,6 +16,7 @@ app.use(
     changeOrigin: true,
     pathFilter: ["!/client/*"],
     selfHandleResponse: true,
+    secure: false,
     logger: console,
     on: {
       proxyRes: responseInterceptor(
@@ -50,7 +51,10 @@ app.use(
             //return responseBuffer;
           }
 
-          if (proxyRes.headers["content-type"].includes("text/html")) {
+          if (
+            //proxyRes.headers["content-type"]?.includes
+            proxyRes.headers["content-type"]?.includes("text/html")
+          ) {
             return responseBuffer
               .toString("utf8")
               .replaceAll("http://www.tisseo.fr", "")
