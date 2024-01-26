@@ -45,8 +45,8 @@ app.use(
           }
 
           if (
-            proxyRes.headers["content-type"].includes &&
-            proxyRes.headers["content-type"].includes("text/html")
+            //proxyRes.headers["content-type"]?.includes
+            proxyRes.headers["content-type"]?.includes("text/html")
           ) {
             return responseBuffer
               .toString("utf8")
