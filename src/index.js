@@ -16,6 +16,7 @@ app.use(
     changeOrigin: true,
     pathFilter: ["!/client/*"],
     selfHandleResponse: true,
+    secure: false,
     logger: console,
     on: {
       proxyRes: responseInterceptor(

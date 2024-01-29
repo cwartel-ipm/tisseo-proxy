@@ -341,10 +341,6 @@ reshapePDF = function (page) {
   });
 };
 
-//document.body.style.visibility = "hidden";
-
-//
-
 window.addEventListener("load", (event) => {
   SPACache.navigate("/client/spinner.html").then(() => {
     my_cache();
