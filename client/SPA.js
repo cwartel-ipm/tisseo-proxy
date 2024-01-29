@@ -201,7 +201,7 @@ const SPACachePDF = (function () {
 
   function displayPDF(node) {
     ///bad strong coupling with pdf reshape
-    node.style.visibility = "collapse";
+    //node.style.visibility = "collapse";
     /*node.childNodes.forEach(function callback(child_node) {
         //child_node.style.visibility = "visible";
         //console.log(child_node);
@@ -213,12 +213,12 @@ const SPACachePDF = (function () {
         document.body.style.visibility = "visible";
         document.querySelector("div").style.visibility = "visible";
       };*/
-    SPACache.getPage("/client/spinner.html").then((spinner) => {
+    /*SPACache.getPage("/client/spinner.html").then((spinner) => {
       spinner.childNodes.forEach(function callback(child_node) {
         child_node.style.visibility = "visible";
         document.body.appendChild(child_node);
       });
-    });
+    });*/
     /*document.body.appendChild(
         Promise.resolve(SPACache.getPage("/client/spinner.html")),
       );*/
@@ -265,9 +265,9 @@ cache_behaviour = function (node) {
           //https_target = "https" + target.substring(4);
 
           //SPACachePDF.loadPDF(https_target);
-          SPACache.navigate("/client/spinner.html").then(() => {
-            SPACachePDF.loadPDF(target);
-          });
+          //SPACache.navigate("/client/spinner.html").then(() => {
+          SPACachePDF.loadPDF(target);
+          //});
           //SPACachePDF.loadPDF(target);
 
           //location.href = https_target;
@@ -296,13 +296,13 @@ reshapePDF = function (page) {
       var a = document.createElement("a");
       var a2 = document.createElement("a");
       var d = document.createElement("div");
-      elm.onload = function () {
+      /*elm.onload = function () {
         ///bad strong coupling
 
         document.getElementById("loading").remove();
         document.body.style.visibility = "visible";
         d.style.visibility = "visible";
-      };
+      };*/
 
       page.style.backgroundColor = "#ebebeb";
       page.style.margin = "20px";
@@ -328,7 +328,7 @@ reshapePDF = function (page) {
       a2.href = 'javascript:if(window.print)window.frames["pdf-embed"].print()';
       a2.classList.add("tab");
 
-      d.style.visibility = "collapse";
+      //d.style.visibility = "collapse";
       page.insertBefore(d, elm);
       d.appendChild(a);
       d.appendChild(a2);
