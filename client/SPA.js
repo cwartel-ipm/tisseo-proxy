@@ -1,7 +1,10 @@
 // TODO :
+// resolve race condition : navigate should return a promise (DONE)
+// and we should use a callback to show pdf when fully loaded (DONE)
+// Tidy up spinner logic coupling, get it out of the pdf reshape if possible
 // factorize spinner
 // css ize instead of inline style ?
-// generalize navigation (through router ?) / page look transformation (reshape) / page behaviour transformation (cache_behaviour)
+// (=> with callbacks) generalize navigation (through router ?) / page look transformation (reshape) / page behaviour transformation (cache_behaviour)
 
 // not necessary ...
 function loadJS(FILE_URL) {
@@ -22,6 +25,14 @@ function blobToBase64(blob) {
     reader.readAsDataURL(blob);
   });
 }
+
+const tisseo_links = [
+  "/se-deplacer/horaires",
+  "/se-deplacer/horaires/metro",
+  "/se-deplacer/horaires/tad",
+  "/se-deplacer/horaires/navettes",
+  "/se-deplacer/horaires/scolaires",
+];
 
 function waitForElm(node, selector) {
   return new Promise((resolve) => {
@@ -92,22 +103,28 @@ const SPACache = (function () {
     } else {
       // when HTML content is fetched...
       return fetchPage(url).then((content) => {
-        //create a loose DOM node
-        head = document.createElement("html");
-        head.innerHTML =
-          '<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">';
+        //only reshape tisseo pages
+        if (tisseo_links.includes(url)) {
+          //create a loose DOM node
+          head = document.createElement("html");
+          head.innerHTML =
+            '<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">';
 
+          node = document.createElement("body");
+          node.innerHTML = content;
+          //when the node is reshaped ...
+          return reshape(node).then((node) => {
+            // apply wanted behaviour to the reshaped node ...
+            return cache_behaviour(node).then((node) => {
+              // put the node in cache and send it back to the getPage() call
+              cachePage(url, node);
+              return node;
+            });
+          });
+        }
         node = document.createElement("body");
         node.innerHTML = content;
-        //when the node is reshaped ...
-        return reshape(node).then((node) => {
-          // apply wanted behaviour to the reshaped node ...
-          return cache_behaviour(node).then((node) => {
-            // put the node in cache and send it back to the getPage() call
-            cachePage(url, node);
-            return node;
-          });
-        });
+        return node;
       });
     }
   }
@@ -119,10 +136,13 @@ const SPACache = (function () {
   }
 
   function navigate(url) {
-    var target = document.getElementById("spinner");
-    var spinner = new Spinner().spin(target);
-    getPage(url).then((node) => {
-      renderPage(node);
+    return new Promise((resolve) => {
+      //show_spinner().then(() => {
+      getPage(url).then((node) => {
+        renderPage(node);
+        resolve();
+        //});
+      });
     });
   }
 
@@ -151,7 +171,7 @@ const SPACachePDF = (function () {
             //PDFnode.querySelectorAll("embed")[0].src = url;
 
             /*PDFnode.querySelectorAll("embed")[0].src =
-              "data:application/pdf;base64,JVBERi0xLjcKCjEgMCBvYmogICUgZW50cnkgcG9pbnQKPDwKICAvVHlwZSAvQ2F0YWxvZwogIC9QYWdlcyAyIDAgUgo+PgplbmRvYmoKCjIgMCBvYmoKPDwKICAvVHlwZSAvUGFnZXMKICAvTWVkaWFCb3ggWyAwIDAgMjAwIDIwMCBdCiAgL0NvdW50IDEKICAvS2lkcyBbIDMgMCBSIF0KPj4KZW5kb2JqCgozIDAgb2JqCjw8CiAgL1R5cGUgL1BhZ2UKICAvUGFyZW50IDIgMCBSCiAgL1Jlc291cmNlcyA8PAogICAgL0ZvbnQgPDwKICAgICAgL0YxIDQgMCBSIAogICAgPj4KICA+PgogIC9Db250ZW50cyA1IDAgUgo+PgplbmRvYmoKCjQgMCBvYmoKPDwKICAvVHlwZSAvRm9udAogIC9TdWJ0eXBlIC9UeXBlMQogIC9CYXNlRm9udCAvVGltZXMtUm9tYW4KPj4KZW5kb2JqCgo1IDAgb2JqICAlIHBhZ2UgY29udGVudAo8PAogIC9MZW5ndGggNDQKPj4Kc3RyZWFtCkJUCjcwIDUwIFRECi9GMSAxMiBUZgooSGVsbG8sIHdvcmxkISkgVGoKRVQKZW5kc3RyZWFtCmVuZG9iagoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDEwIDAwMDAwIG4gCjAwMDAwMDAwNzkgMDAwMDAgbiAKMDAwMDAwMDE3MyAwMDAwMCBuIAowMDAwMDAwMzAxIDAwMDAwIG4gCjAwMDAwMDAzODAgMDAwMDAgbiAKdHJhaWxlcgo8PAogIC9TaXplIDYKICAvUm9vdCAxIDAgUgo+PgpzdGFydHhyZWYKNDkyCiUlRU9G");*/
+                "data:application/pdf;base64,JVBERi0xLjcKCjEgMCBvYmogICUgZW50cnkgcG9pbnQKPDwKICAvVHlwZSAvQ2F0YWxvZwogIC9QYWdlcyAyIDAgUgo+PgplbmRvYmoKCjIgMCBvYmoKPDwKICAvVHlwZSAvUGFnZXMKICAvTWVkaWFCb3ggWyAwIDAgMjAwIDIwMCBdCiAgL0NvdW50IDEKICAvS2lkcyBbIDMgMCBSIF0KPj4KZW5kb2JqCgozIDAgb2JqCjw8CiAgL1R5cGUgL1BhZ2UKICAvUGFyZW50IDIgMCBSCiAgL1Jlc291cmNlcyA8PAogICAgL0ZvbnQgPDwKICAgICAgL0YxIDQgMCBSIAogICAgPj4KICA+PgogIC9Db250ZW50cyA1IDAgUgo+PgplbmRvYmoKCjQgMCBvYmoKPDwKICAvVHlwZSAvRm9udAogIC9TdWJ0eXBlIC9UeXBlMQogIC9CYXNlRm9udCAvVGltZXMtUm9tYW4KPj4KZW5kb2JqCgo1IDAgb2JqICAlIHBhZ2UgY29udGVudAo8PAogIC9MZW5ndGggNDQKPj4Kc3RyZWFtCkJUCjcwIDUwIFRECi9GMSAxMiBUZgooSGVsbG8sIHdvcmxkISkgVGoKRVQKZW5kc3RyZWFtCmVuZG9iagoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDEwIDAwMDAwIG4gCjAwMDAwMDAwNzkgMDAwMDAgbiAKMDAwMDAwMDE3MyAwMDAwMCBuIAowMDAwMDAwMzAxIDAwMDAwIG4gCjAwMDAwMDAzODAgMDAwMDAgbiAKdHJhaWxlcgo8PAogIC9TaXplIDYKICAvUm9vdCAxIDAgUgo+PgpzdGFydHhyZWYKNDkyCiUlRU9G");*/
 
             return reshapePDF(PDFnode).then((node) => {
               return PDFnode;
@@ -180,14 +200,35 @@ const SPACachePDF = (function () {
   }
 
   function displayPDF(node) {
+    ///bad strong coupling with pdf reshape
+    node.style.visibility = "collapse";
+    /*node.childNodes.forEach(function callback(child_node) {
+        //child_node.style.visibility = "visible";
+        //console.log(child_node);
+        document.body.appendChild(child_node);
+      });*/
     document.body = node;
+    /*document.querySelector("embed").onload = function () {
+        //document.getElementById("loading").remove();
+        document.body.style.visibility = "visible";
+        document.querySelector("div").style.visibility = "visible";
+      };*/
+    SPACache.getPage("/client/spinner.html").then((spinner) => {
+      spinner.childNodes.forEach(function callback(child_node) {
+        child_node.style.visibility = "visible";
+        document.body.appendChild(child_node);
+      });
+    });
+    /*document.body.appendChild(
+        Promise.resolve(SPACache.getPage("/client/spinner.html")),
+      );*/
   }
 
   function loadPDF(url) {
-    document.body.innerHTML =
-      '<div style="margin: 0;position: absolute;top: 300px;left: 50%;-ms-transform: translate(-50%, -50%);transform: translate(-50%, -50%);" id="spinner"></div>';
-    var target = document.getElementById("spinner");
-    var spinner = new Spinner().spin(target);
+    //document.body.innerHTML =
+    //'<div style="margin: 0;position: absolute;top: 300px;left: 50%;-ms-transform: translate(-50%, -50%);transform: translate(-50%, -50%);" id="spinner"></div>';
+    //var target = document.getElementById("spinner");
+    //var spinner = new Spinner().spin(target);
     getPDF(url).then((node) => {
       displayPDF(node);
     });
@@ -205,18 +246,12 @@ cache_behaviour = function (node) {
         link.addEventListener("click", function (e) {
           SPACache.navigate(url);
           e.preventDefault();
-          e.stopPropagation();
+          //e.stopPropagation();
         });
       }
 
       // change links behaviour so that they point to cache
-      [
-        "/se-deplacer/horaires",
-        "/se-deplacer/horaires/metro",
-        "/se-deplacer/horaires/tad",
-        "/se-deplacer/horaires/navettes",
-        "/se-deplacer/horaires/scolaires",
-      ].forEach(function callback(url, index) {
+      tisseo_links.forEach(function callback(url, index) {
         link = node.querySelectorAll(".tabs_horaires a")[index];
         linkPointsToCache(link, url);
       });
@@ -226,11 +261,14 @@ cache_behaviour = function (node) {
         var target = el.querySelectorAll("td:nth-child(5) a")[0].href;
         el.onclick = function (e) {
           e.preventDefault();
-          e.stopPropagation();
+          //e.stopPropagation();
           //https_target = "https" + target.substring(4);
 
           //SPACachePDF.loadPDF(https_target);
-          SPACachePDF.loadPDF(target);
+          SPACache.navigate("/client/spinner.html").then(() => {
+            SPACachePDF.loadPDF(target);
+          });
+          //SPACachePDF.loadPDF(target);
 
           //location.href = https_target;
         };
@@ -241,11 +279,9 @@ cache_behaviour = function (node) {
 };
 
 async function my_cache() {
-  SPACache.getPage("/se-deplacer/horaires");
-  SPACache.getPage("/se-deplacer/horaires/metro");
-  SPACache.getPage("/se-deplacer/horaires/tad");
-  SPACache.getPage("/se-deplacer/horaires/navettes");
-  SPACache.getPage("/se-deplacer/horaires/scolaires");
+  tisseo_links.forEach(function callback(url) {
+    SPACache.getPage(url);
+  });
 }
 
 // show print and back button when showing specific line pdf
@@ -256,11 +292,18 @@ reshapePDF = function (page) {
       elm.style.position = "fixed";
       elm.style.top = "50px";
       elm.style.height = "1020px";
+
+      var a = document.createElement("a");
+      var a2 = document.createElement("a");
+      var d = document.createElement("div");
       elm.onload = function () {
-        page.style.visibility = "visible";
+        ///bad strong coupling
+
+        document.getElementById("loading").remove();
+        document.body.style.visibility = "visible";
+        d.style.visibility = "visible";
       };
 
-      //b = document.querySelectorAll("body")[0];
       page.style.backgroundColor = "#ebebeb";
       page.style.margin = "20px";
 
@@ -269,26 +312,30 @@ reshapePDF = function (page) {
         "a.tab {border-radius: 5px;text-decoration: none;color: #fff; background-color: #ff6600;font-size: 26px;  line-height: 0.5;position: relative;margin: 10px;  padding: 5px 15px;font-family: Arimo,Arial,Helvetica Neue,Helvetica,sans-serif;} a.tab:focus{color:#fff;background-color:rgba(255,102,0,0.5);}";
       page.appendChild(sheet);
 
-      var a = document.createElement("a");
       var linkText = document.createTextNode("Retour aux fiches horaires");
       a.appendChild(linkText);
       a.onclick = function (e) {
         SPACache.navigate("/se-deplacer/horaires");
         //reshape(document);
         e.preventDefault();
-        e.stopPropagation();
+        //e.stopPropagation();
         //cache_behaviour(document);
       };
       a.classList.add("tab");
 
-      var a2 = document.createElement("a");
       var linkText2 = document.createTextNode("Imprimer");
       a2.appendChild(linkText2);
       a2.href = 'javascript:if(window.print)window.frames["pdf-embed"].print()';
       a2.classList.add("tab");
 
-      page.insertBefore(a, elm);
-      page.insertBefore(a2, elm);
+      d.style.visibility = "collapse";
+      page.insertBefore(d, elm);
+      d.appendChild(a);
+      d.appendChild(a2);
+      //page.insertBefore(a, elm);
+      //page.insertBefore(a2, elm);
+
+      //b = document.querySelectorAll("body")[0];
     });
     resolve(page);
   });
@@ -298,10 +345,13 @@ reshapePDF = function (page) {
 
 //
 
-document.addEventListener("DOMContentLoaded", (event) => {
-  my_cache();
-  SPACache.navigate("/se-deplacer/horaires");
+window.addEventListener("load", (event) => {
+  SPACache.navigate("/client/spinner.html").then(() => {
+    my_cache();
+    SPACache.navigate("/se-deplacer/horaires");
+  });
 });
-
-var target = document.getElementById("spinner");
-var spinner = new Spinner().spin(target);
+//my_cache();
+//SPACache.navigate("/se-deplacer/horaires");
+//var target = document.getElementById("spinner");
+//var spinner = new Spinner().spin(target);
