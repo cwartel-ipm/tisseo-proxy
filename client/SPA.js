@@ -300,7 +300,7 @@ reshapePDF = function (page) {
 
       var a = document.createElement("a");
       var a2 = document.createElement("a");
-      var d = document.createElement("div");
+      //var d = document.createElement("div");
       /*elm.onload = function () {
         ///bad strong coupling
 
@@ -334,11 +334,11 @@ reshapePDF = function (page) {
       a2.classList.add("tab");
 
       //d.style.visibility = "collapse";
-      page.insertBefore(d, elm);
-      d.appendChild(a);
-      d.appendChild(a2);
-      //page.insertBefore(a, elm);
-      //page.insertBefore(a2, elm);
+      //page.insertBefore(d, elm);
+      //d.appendChild(a);
+      //d.appendChild(a2);
+      page.insertBefore(a, elm);
+      page.insertBefore(a2, elm);
 
       //b = document.querySelectorAll("body")[0];
     });
