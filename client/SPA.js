@@ -5,6 +5,7 @@
 // factorize spinner
 // css ize instead of inline style ?
 // (=> with callbacks) generalize navigation (through router ?) / page look transformation (reshape) / page behaviour transformation (cache_behaviour)
+// protect from blocking errors as in : el.querySelectorAll("td:nth-child(5) a")[0]?.href; when href does not exist
 
 // not necessary ...
 function loadJS(FILE_URL) {
@@ -229,8 +230,10 @@ const SPACachePDF = (function () {
     //'<div style="margin: 0;position: absolute;top: 300px;left: 50%;-ms-transform: translate(-50%, -50%);transform: translate(-50%, -50%);" id="spinner"></div>';
     //var target = document.getElementById("spinner");
     //var spinner = new Spinner().spin(target);
-    getPDF(url).then((node) => {
-      displayPDF(node);
+    SPACache.navigate("/client/spinner.html").then(() => {
+      getPDF(url).then((node) => {
+        displayPDF(node);
+      });
     });
   }
 
@@ -258,7 +261,8 @@ cache_behaviour = function (node) {
 
       // make all rows click redirect to the pdf column (5th) target
       node.querySelectorAll(".table tbody tr").forEach((el) => {
-        var target = el.querySelectorAll("td:nth-child(5) a")[0].href;
+        //console.log(el);
+        var target = el.querySelectorAll("td:nth-child(5) a")[0]?.href;
         el.onclick = function (e) {
           e.preventDefault();
           //e.stopPropagation();
