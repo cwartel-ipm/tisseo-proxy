@@ -262,20 +262,21 @@ cache_behaviour = function (node) {
       // make all rows click redirect to the pdf column (5th) target
       node.querySelectorAll(".table tbody tr").forEach((el) => {
         //console.log(el);
-        var target = el.querySelectorAll("td:nth-child(5) a")[0]?.href;
-        el.onclick = function (e) {
-          e.preventDefault();
-          //e.stopPropagation();
-          //https_target = "https" + target.substring(4);
+        if ((target = el.querySelectorAll("td:nth-child(5) a")[0]?.href)) {
+          el.onclick = function (e) {
+            e.preventDefault();
+            //e.stopPropagation();
+            //https_target = "https" + target.substring(4);
 
-          //SPACachePDF.loadPDF(https_target);
-          //SPACache.navigate("/client/spinner.html").then(() => {
-          SPACachePDF.loadPDF(target);
-          //});
-          //SPACachePDF.loadPDF(target);
+            //SPACachePDF.loadPDF(https_target);
+            //SPACache.navigate("/client/spinner.html").then(() => {
+            SPACachePDF.loadPDF(target);
+            //});
+            //SPACachePDF.loadPDF(target);
 
-          //location.href = https_target;
-        };
+            //location.href = https_target;
+          };
+        }
       });
     });
     resolve(node);
