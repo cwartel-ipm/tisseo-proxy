@@ -262,7 +262,9 @@ cache_behaviour = function (node) {
       // make all rows click redirect to the pdf column (5th) target
       node.querySelectorAll(".table tbody tr").forEach((el) => {
         //console.log(el);
-        if ((target = el.querySelectorAll("td:nth-child(5) a")[0]?.href)) {
+        var target = el.querySelectorAll("td:nth-child(5) a")[0].href;
+
+        if (target) {
           el.onclick = function (e) {
             e.preventDefault();
             //e.stopPropagation();
